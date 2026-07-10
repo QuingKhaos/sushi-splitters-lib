@@ -14,7 +14,7 @@ Best to look at the source of the other mods that use this library for examples.
 
 ## Credits
 
-Based in the code of the original mod.
+Based on the code of the original mod.
 
 ## All my Sushi Splitters mods
 
