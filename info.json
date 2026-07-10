@@ -1,12 +1,18 @@
 {
-  "name": "###NAME###",
-  "title": "###TITLE###",
-  "description": "###DESCRIPTION###",
+  "name": "sushi-splitters-lib",
+  "title": "Sushi Splitters Library",
+  "description": "Small library to create Sushi Splitters dynamically.",
   "author": "QuingKhaos",
   "homepage": "",
   "version": "1.0.0",
   "factorio_version": "2.0",
   "dependencies": [
-    "base >= 2.0.0"
+    "base >= 2.0.77",
+    "? quality >= 2.0.77",
+
+    "flib >= 0.16.5",
+    "khaoslib >= 1.6.0",
+
+    "sushi-splitters >= 0.2.1"
   ]
 }
