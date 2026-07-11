@@ -26,10 +26,10 @@ local default_icons = {
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.create_entity(def)
   if khaoslib_entity.exists("splitter", def.name) then
-    khaoslib_entity:load("splitter", def.name)
-      :copy("sushi-" .. def.name)
-      :set {minable = {result = "sushi-" .. (def.item or def.name)}}
-      :set {next_upgrade = data.raw["splitter"][def.name].next_upgrade and "sushi-" .. data.raw["splitter"][def.name].next_upgrade or nil}
+    local orig = khaoslib_entity.get("splitter", def.name)
+    khaoslib_entity.copy("splitter", def.name, "sushi-" .. def.name)
+      :set {next_upgrade = orig.next_upgrade and "sushi-" .. orig.next_upgrade or nil}
+      :merge_minable {result = "sushi-" .. (def.item or def.name)}
       :commit()
   end
 end
@@ -37,15 +37,16 @@ end
 --- Create the sushi splitter item for the given definition.
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.create_item(def)
-  local item = def.item or def.name
-  if khaoslib_item.exists(item) then
+  local item_name = def.item or def.name
+  if khaoslib_item.exists(item_name) then
+    local orig = khaoslib_item.get(item_name)
     khaoslib_item:load {
       type = "item",
-      name = "sushi-" .. item,
-      subgroup = data.raw["item"][item].subgroup,
-      order = data.raw["item"][item].order .. "-sushi",
-      stack_size = data.raw["item"][item].stack_size,
-      weight = data.raw["item"][item].weight,
+      name = "sushi-" .. item_name,
+      subgroup = orig.subgroup,
+      order = orig.order .. "-sushi",
+      stack_size = orig.stack_size,
+      weight = orig.weight,
       place_result = "sushi-" .. def.name,
       inventory_move_sound = item_sounds.mechanical_inventory_move,
       pick_sound = item_sounds.mechanical_inventory_pickup,
@@ -58,18 +59,19 @@ end
 --- Create the sushi splitter recipe from original splitter for the given definition.
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.create_recipe(def)
-  local recipe = def.recipe or def.name
-  if khaoslib_recipe.exists(recipe) then
+  local recipe_name = def.recipe or def.name
+  if khaoslib_recipe.exists(recipe_name) then
+    local orig = khaoslib_recipe.get(recipe_name)
     khaoslib_recipe:load {
       type = "recipe",
-      name = "sushi-" .. recipe,
-      enabled = data.raw["recipe"][recipe].enabled or false,
-      energy_required = data.raw["recipe"][recipe].energy_required or 1,
+      name = "sushi-" .. recipe_name,
+      enabled = orig.enabled or false,
+      energy_required = orig.energy_required or 1,
     } :set_ingredients {
       {type = "item", name = def.item or def.name, amount = 1},
       {type = "item", name = "copper-cable", amount = 1},
     } :set_results {
-      {type = "item", name = "sushi-" .. (def.item or def.name), amount = data.raw["recipe"][recipe].results[1].amount or 1},
+      {type = "item", name = "sushi-" .. (def.item or def.name), amount = orig.results[1].amount or 1},
     } :set_icons(def.recipe_icons or def.icons or default_icons)
       :commit()
   end
@@ -78,10 +80,11 @@ end
 --- Create the sushi splitter upgrade recipe from previous tier sushi splitter for the given definition.
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.create_upgrade_recipe(def)
-  local recipe = def.recipe or def.name
-  if khaoslib_recipe.exists(recipe) then
-    local new_recipe = khaoslib_recipe.copy(recipe, "sushi-" .. recipe .. "-upgrade")
-      :set {localised_name = flib_locale.of("recipe", "sushi-" .. recipe)}
+  local recipe_name = def.recipe or def.name
+  if khaoslib_recipe.exists(recipe_name) then
+    local orig = khaoslib_recipe.get(recipe_name)
+    local recipe = khaoslib_recipe.copy(recipe_name, "sushi-" .. recipe_name .. "-upgrade")
+      :set {localised_name = flib_locale.of("recipe", "sushi-" .. recipe_name)}
       :set_icons(def.recipe_icons or def.icons or default_icons)
       :replace_ingredient(function (ingredient)
         return ingredient.name:match("splitter") ~= nil and ingredient.name:match("sushi") == nil
@@ -90,21 +93,21 @@ function sushi_splitters.create_upgrade_recipe(def)
         return ingredient
       end, {all = true})
       :set_results {
-        {type = "item", name = "sushi-" .. (def.item or def.name), amount = data.raw["recipe"][recipe].results[1].amount or 1},
+        {type = "item", name = "sushi-" .. (def.item or def.name), amount = orig.results[1].amount or 1},
       }
 
-    if not new_recipe:has_ingredient("sushi-" .. (def.item or def.name)) then
-      if new_recipe:has_ingredient("copper-cable") then
-        new_recipe:replace_ingredient("copper-cable", function (ingredient)
+    if not recipe:has_ingredient("sushi-" .. (def.item or def.name)) then
+      if recipe:has_ingredient("copper-cable") then
+        recipe:replace_ingredient("copper-cable", function (ingredient)
           ingredient.amount = ingredient.amount + 1
           return ingredient
         end)
       else
-        new_recipe:add_ingredient {type = "item", name = "copper-cable", amount = 1}
+        recipe:add_ingredient {type = "item", name = "copper-cable", amount = 1}
       end
     end
 
-    new_recipe:commit()
+    recipe:commit()
   end
 end
 
@@ -114,6 +117,7 @@ function sushi_splitters.create_recycling_recipe(def)
   local upgrade_recipe_name = "sushi-" .. (def.recipe or def.name) .. "-upgrade"
   if khaoslib_recipe.count_results(upgrade_recipe_name) ~= 1 then return end
 
+  local orig = khaoslib_recipe.get(upgrade_recipe_name)
   local recipe = khaoslib_recipe:load {
     type = "recipe",
     name = "sushi-" .. (def.recipe or def.name) .. "-recycling",
@@ -122,7 +126,7 @@ function sushi_splitters.create_recycling_recipe(def)
     hidden = true,
     allow_decomposition = false,
     unlock_results = false,
-    energy_required = (data.raw.recipe[upgrade_recipe_name] and data.raw.recipe[upgrade_recipe_name].energy_required or 0.5) / 16,
+    energy_required = (orig.energy_required or 0.5) / 16,
   }
 
   local icons = {}
@@ -161,7 +165,7 @@ function sushi_splitters.create_recycling_recipe(def)
       quaternary = {0.5, 0.5, 0.5, 0.5},
     }
 
-    for _, ingredient in pairs(data.raw.recipe[upgrade_recipe_name].ingredients) do
+    for _, ingredient in pairs(khaoslib_recipe.get(upgrade_recipe_name).ingredients) do
       if ingredient.type == "item" and khaoslib_item.exists(ingredient.name) then
         local amount = ingredient.amount
         local probability = 4 * upgrade_results[1].amount
@@ -190,7 +194,8 @@ function sushi_splitters.create_recycling_recipe(def)
       end
     end
 
-    recipe:set {crafting_machine_tint = result_crafting_tint}
+    recipe:set_crafting_machine_tint(result_crafting_tint)
+      :commit()
   end
 end
 
