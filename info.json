@@ -11,7 +11,7 @@
     "? quality >= 2.0.77",
 
     "flib >= 0.16.5",
-    "khaoslib >= 1.7.0",
+    "khaoslib >= 1.8.0",
 
     "sushi-splitters >= 0.2.1"
   ]
