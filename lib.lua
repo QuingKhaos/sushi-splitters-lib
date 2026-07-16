@@ -60,8 +60,11 @@ end
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.create_recipe(def)
   local recipe_name = def.recipe or def.name
+
   if khaoslib_recipe.exists(recipe_name) then
     local orig = khaoslib_recipe.get(recipe_name)
+    local results = orig.results
+
     khaoslib_recipe:load {
       type = "recipe",
       name = "sushi-" .. recipe_name,
@@ -71,7 +74,7 @@ function sushi_splitters.create_recipe(def)
       {type = "item", name = def.item or def.name, amount = 1},
       {type = "item", name = "copper-cable", amount = 1},
     } :set_results {
-      {type = "item", name = "sushi-" .. (def.item or def.name), amount = orig.results[1].amount or 1},
+      {type = "item", name = "sushi-" .. (def.item or def.name), amount = (results and results[1]) and results[1].amount or 1},
     } :set_icons(def.recipe_icons or def.icons or default_icons)
       :commit()
   end
@@ -83,17 +86,20 @@ function sushi_splitters.create_upgrade_recipe(def)
   local recipe_name = def.recipe or def.name
   if khaoslib_recipe.exists(recipe_name) then
     local orig = khaoslib_recipe.get(recipe_name)
+    local results = orig.results
+
     local recipe = khaoslib_recipe.copy(recipe_name, "sushi-" .. recipe_name .. "-upgrade")
       :set {localised_name = flib_locale.of("recipe", "sushi-" .. recipe_name)}
       :set_icons(def.recipe_icons or def.icons or default_icons)
       :replace_ingredient(function (ingredient)
+        --- @diagnostic disable-next-line: param-type-mismatch
         return ingredient.name:match("splitter") ~= nil and ingredient.name:match("sushi") == nil
       end, function (ingredient)
         ingredient.name = "sushi-" .. (def.item or def.name)
         return ingredient
       end, {all = true})
       :set_results {
-        {type = "item", name = "sushi-" .. (def.item or def.name), amount = orig.results[1].amount or 1},
+        {type = "item", name = "sushi-" .. (def.item or def.name), amount = (results and results[1]) and results[1].amount or 1},
       }
 
     if not recipe:has_ingredient("sushi-" .. (def.item or def.name)) then
@@ -129,35 +135,18 @@ function sushi_splitters.create_recycling_recipe(def)
     energy_required = (orig.energy_required or 0.5) / 16,
   }
 
-  local icons = {}
-  if #def.icons == 1 then
-    icons = {
-      {icon = "__quality__/graphics/icons/recycling.png", icon_size = 64},
-      {icon = def.icons[1].icon, icon_size = def.icons[1].icon_size, scale = (0.5 * defines.default_icon_size / (def.icons[1].icon_size or defines.default_icon_size)) * 0.8},
-      {icon = "__quality__/graphics/icons/recycling-top.png", icon_size = 64},
-    }
-  else
-    icons = {
-      {icon = "__quality__/graphics/icons/recycling.png", icon_size = 64},
-    }
-
-    for i = 1, #def.icons do
-      local icon = table.deepcopy(def.icons[i])
-      icon.scale = ((icon.scale == nil) and (0.5 * defines.default_icon_size / (icon.icon_size or defines.default_icon_size)) or icon.scale) * 0.8
-      icon.shift = util.mul_shift(icon.shift, 0.8)
-      table.insert(icons, icon)
-    end
-
-    table.insert(icons, {icon = "__quality__/graphics/icons/recycling-top.png", icon_size = 64})
-  end
+  local icons = {{icon = "__quality__/graphics/icons/recycling.png", icon_size = 64}}
+  util.combine_icons(icons, def.icons or {}, {scale = 0.8}, 64)
+  table.insert(icons, {icon = "__quality__/graphics/icons/recycling-top.png", icon_size = 64})
   recipe:set_icons(icons)
 
   local upgrade_results = khaoslib_recipe.get_results(upgrade_recipe_name)
-  if khaoslib_recipe.exists(upgrade_results[1].name) then
+  if khaoslib_item.exists(upgrade_results[1]--[[@cast -?]].name) then
     recipe:set_ingredients {
       {type = "item", name = "sushi-" .. (def.item or def.name), amount = 1},
     }
 
+    --- @type data.RecipeTints
     local result_crafting_tint = {
       primary = {0.5, 0.5, 0.5, 0.5},
       secondary = {0.5, 0.5, 0.5, 0.5},
@@ -165,12 +154,12 @@ function sushi_splitters.create_recycling_recipe(def)
       quaternary = {0.5, 0.5, 0.5, 0.5},
     }
 
-    for _, ingredient in pairs(khaoslib_recipe.get(upgrade_recipe_name).ingredients) do
+    for _, ingredient in pairs(khaoslib_recipe.get_ingredients(upgrade_recipe_name)) do
       if ingredient.type == "item" and khaoslib_item.exists(ingredient.name) then
         local amount = ingredient.amount
-        local probability = 4 * upgrade_results[1].amount
+        local probability = 4 * (upgrade_results[1] and upgrade_results[1].amount or 1) --[[@as integer]]
         local remainder = amount % probability
-        amount = amount / probability
+        amount = (amount / probability) --[[@as integer]] -- not really true, but yeah..
         local extra_fraction = remainder / probability
 
         recipe:add_result {type = "item", name = ingredient.name, amount = amount, extra_count_fraction = extra_fraction}
