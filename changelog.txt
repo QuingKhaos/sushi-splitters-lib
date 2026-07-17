@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.0
+Date: 2026-07-16
+  Major Features:
+    - Instead of expecting icons, the sushi splitters library now expects a tint to use, and utilizes QuingKhaos' Kitbashing Toolkit to generate the icons.
+    - Automatic cleanup of defective sushi splitter upgrade recipes.
+    - Automatic cleanup of defective sushi splitter upgrade paths.
+  Minor Features:
+    - Add helper function to remove a sushi splitter completely from the game.
+  Bugfixes:
+    - Add correct sushi splitter entity icon.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 2026-07-11
   Changes:

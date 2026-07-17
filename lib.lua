@@ -1,5 +1,6 @@
 local flib_locale = require("__flib__.locale")
 local item_sounds = require("__base__.prototypes.item_sounds")
+local khaosbash = require("__khaosbash__.prototypes.lib")
 local khaoslib_entity = require("__khaoslib__.entity")
 local khaoslib_item = require("__khaoslib__.item")
 local khaoslib_recipe = require("__khaoslib__.recipe")
@@ -9,18 +10,12 @@ local util = require("util")
 --- @class SushiSplitters
 local sushi_splitters = {}
 
---- @type data.IconData[]
-local default_icons = {
-  {icon = "__sushi-splitters__/graphics/icons/sushi-gray-splitter.png", icon_size = 32}
-}
-
 --- @class SushiSplitters.SushiSplitterDefinition
 --- @field public name data.EntityID Name of the splitter for which the sushi splitter should be created.
 --- @field public item data.ItemID? Name of the item for the named splitter, if different from the entity name. Defaults to the entity name if not set.
 --- @field public recipe data.RecipeID? Name of the recipe for the named splitter, if different from the entity name. Defaults to the entity name if not set.
---- @field public icons data.IconData[]? Icons for the sushi splitter. Defaults to a generic gray sushi splitter icon if not set.
---- @field public recipe_icons data.IconData[]? Alternative icons for the sushi splitter recipes. Defaults to the same icons as the sushi splitter if not set.
---- @field public unlock_tech data.TechnologyID? Name of the technology that unlocks the sushi splitter recipe. If not set, the recipe will not be added to any technology and will need to be unlocked manually.
+--- @field public tint data.Color Tint for the sushi splitters arrows.
+--- @field public unlock data.TechnologyID? Name of the technology that unlocks the sushi splitter recipe. If not set, the recipe will not be added to any technology and will need to be unlocked manually.
 
 --- Create the sushi splitter entity for the given definition.
 --- @param def SushiSplitters.SushiSplitterDefinition
@@ -28,6 +23,7 @@ function sushi_splitters.create_entity(def)
   if khaoslib_entity.exists("splitter", def.name) then
     local orig = khaoslib_entity.get("splitter", def.name)
     khaoslib_entity.copy("splitter", def.name, "sushi-" .. def.name)
+      :set_icons(khaosbash.load_icons("__khaosbash__/graphics/base/icons/splitter-south", def.tint))
       :set {next_upgrade = orig.next_upgrade and "sushi-" .. orig.next_upgrade or nil}
       :merge_minable {result = "sushi-" .. (def.item or def.name)}
       :commit()
@@ -51,7 +47,7 @@ function sushi_splitters.create_item(def)
       inventory_move_sound = item_sounds.mechanical_inventory_move,
       pick_sound = item_sounds.mechanical_inventory_pickup,
       drop_sound = item_sounds.mechanical_inventory_move,
-    } :set_icons(def.icons or default_icons)
+    } :set_icons(khaosbash.load_icons("__khaosbash__/graphics/base/icons/splitter-south", def.tint))
       :commit()
   end
 end
@@ -75,7 +71,7 @@ function sushi_splitters.create_recipe(def)
       {type = "item", name = "copper-cable", amount = 1},
     } :set_results {
       {type = "item", name = "sushi-" .. (def.item or def.name), amount = (results and results[1]) and results[1].amount or 1},
-    } :set_icons(def.recipe_icons or def.icons or default_icons)
+    }:set_icons(khaosbash.load_icons("__khaosbash__/graphics/base/icons/splitter-south", def.tint))
       :commit()
   end
 end
@@ -90,7 +86,7 @@ function sushi_splitters.create_upgrade_recipe(def)
 
     local recipe = khaoslib_recipe.copy(recipe_name, "sushi-" .. recipe_name .. "-upgrade")
       :set {localised_name = flib_locale.of("recipe", "sushi-" .. recipe_name)}
-      :set_icons(def.recipe_icons or def.icons or default_icons)
+      :set_icons(khaosbash.load_icons("__khaosbash__/graphics/base/icons/splitter-south", def.tint))
       :replace_ingredient(function (ingredient)
         --- @diagnostic disable-next-line: param-type-mismatch
         return ingredient.name:match("splitter") ~= nil and ingredient.name:match("sushi") == nil
@@ -136,7 +132,7 @@ function sushi_splitters.create_recycling_recipe(def)
   }
 
   local icons = {{icon = "__quality__/graphics/icons/recycling.png", icon_size = 64}}
-  util.combine_icons(icons, def.icons or {}, {scale = 0.8}, 64)
+  util.combine_icons(icons, khaosbash.load_icons("__khaosbash__/graphics/base/icons/splitter-south", def.tint), {scale = 0.8}, 64)
   table.insert(icons, {icon = "__quality__/graphics/icons/recycling-top.png", icon_size = 64})
   recipe:set_icons(icons)
 
@@ -191,8 +187,8 @@ end
 --- Add the sushi splitter recipe to the technology that unlocks it for the given definition.
 --- @param def SushiSplitters.SushiSplitterDefinition
 function sushi_splitters.add_unlock(def)
-  if def.unlock_tech and khaoslib_technology.exists(def.unlock_tech) then
-    khaoslib_technology:load(def.unlock_tech)
+  if def.unlock and khaoslib_technology.exists(def.unlock) then
+    khaoslib_technology:load(def.unlock)
       :add_unlock_recipe ("sushi-" .. (def.recipe or def.name))
       :add_unlock_recipe ("sushi-" .. (def.recipe or def.name) .. "-upgrade")
       :commit()
@@ -212,6 +208,32 @@ function sushi_splitters.create_sushi_splitter(def)
   end
 
   sushi_splitters.add_unlock(def)
+end
+
+--- @param name data.EntityID Name of the splitter for which the sushi splitter should be created.
+--- @param item data.ItemID? Name of the item for the named splitter, if different from the entity name. Defaults to the entity name if not set.
+--- @param recipe data.RecipeID? Name of the recipe for the named splitter, if different from the entity name. Defaults to the entity name if not set.
+--- @param unlock data.TechnologyID? Name of the technology that unlocks the sushi splitter recipe.
+function sushi_splitters.remove_sushi_splitter(name, item, recipe, unlock)
+  khaoslib_entity.remove("splitter", "sushi-" .. name)
+  khaoslib_item.remove("sushi-" .. (item or name))
+  khaoslib_recipe.remove("sushi-" .. (recipe or name))
+  khaoslib_recipe.remove("sushi-" .. (recipe or name) .. "-upgrade")
+
+  if mods["quality"] and khaoslib_recipe.exists("sushi-" .. (recipe or name) .. "-recycling") then
+    khaoslib_recipe.remove("sushi-" .. (recipe or name) .. "-recycling")
+  end
+
+  if mods["Flare Stack"] and khaoslib_recipe.exists("item-sushi-" .. (recipe or name) .. "-incineration") then
+    khaoslib_recipe.remove("item-sushi-" .. (recipe or name) .. "-incineration")
+  end
+
+  if unlock and khaoslib_technology.exists(unlock) then
+    khaoslib_technology:load(unlock)
+      :remove_unlock_recipe("sushi-" .. (recipe or name))
+      :remove_unlock_recipe("sushi-" .. (recipe or name) .. "-upgrade")
+      :commit()
+  end
 end
 
 return sushi_splitters

@@ -4,15 +4,18 @@
   "description": "Small library to create Sushi Splitters dynamically.",
   "author": "QuingKhaos",
   "homepage": "https://discord.gg/SYmkaDjFCt",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "factorio_version": "2.0",
   "dependencies": [
     "base >= 2.0.77",
     "? quality >= 2.0.77",
 
     "flib >= 0.16.5",
+    "khaosbash >= 1.1.0",
     "khaoslib >= 1.17.0",
 
-    "sushi-splitters >= 0.2.1"
+    "sushi-splitters >= 0.2.1",
+
+    "(?) Flare Stack >= 4.1.1"
   ]
 }

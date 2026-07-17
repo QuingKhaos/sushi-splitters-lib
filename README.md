@@ -6,22 +6,9 @@
 
 # Sushi Splitters Library
 
-Small library to create Sushi Splitters dynamically.
-
-## Usage
-
-Best to look at the source of the other mods that use this library for examples.
+Small library to create [Sushi Splitters](https://mods.factorio.com/mod/sushi-splitters) dynamically.
 
 ## Credits
 
-Based on the code of the original mod.
-
-## All my Sushi Splitters mods
-
-- [Sushi Splitters Library][lib] - Small library to create Sushi Splitters dynamically.
-- [Sushi Splitters: Lignumis Compatibility][lignumis-compat] - Adds sushi splitters support to Lignumis.
-- [Sushi Splitters Tweaks][tweaks] - Opinionated tweaks to Sushi Splitters.
-
-[lib]: https://mods.factorio.com/mod/sushi-splitters-lib
-[lignumis-compat]: https://mods.factorio.com/mod/sushi-splitters-lignumis-compat
-[tweaks]: https://mods.factorio.com/mod/sushi-splitters-tweaks
+This mod also uses modified base game assets from [QuingKhaos' Kitbash Toolkit](https://mods.factorio.com/mod/khaosbash),
+which are licensed under the [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license.
